@@ -121,6 +121,31 @@ pub struct VMTrace {
     pub ops: Vec<VMOperation>,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ErigonCost(pub u64);
+
+impl Serialize for ErigonCost {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ErigonCost {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
+        let number = i128::deserialize(deserializer)?;
+        if number<0 || number>u64::MAX as i128{
+            Ok(ErigonCost(u64::MAX))
+        }else{
+            Ok(ErigonCost(number as u64))
+        }
+    }
+}
+
+
 #[derive(Debug, Clone, PartialEq, Default, Deserialize, Serialize)]
 #[allow(clippy::upper_case_acronyms)]
 /// A record of the execution of a single VM operation.
@@ -128,7 +153,7 @@ pub struct VMOperation {
     /// The program counter.
     pub pc: usize,
     /// The gas cost for this instruction.
-    pub cost: u64,
+    pub cost: ErigonCost,
     /// Information concerning the execution of the operation.
     pub ex: Option<VMExecutedOperation>,
     /// Subordinate trace of the CALL/CREATE if applicable.
